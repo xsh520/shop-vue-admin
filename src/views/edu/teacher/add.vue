@@ -148,40 +148,40 @@ export default {
     },
     resetForm(formName) {
       this.$refs[formName].resetFields()
-    }
-  },
-  saveOrUpdate() {
+    },
+    saveOrUpdate() {
     // 判断修改还是添加
     // 根据teacher是否有id
-    if (!this.teacherObj.id) {
+      if (!this.teacherObj.id) {
       // 添加
-      this.saveTeacher()
-    } else {
+        this.saveTeacher()
+      } else {
       // 修改
-      this.updateTeacher()
+        this.updateTeacher()
+      }
+    },
+    updateTeacher() {
+      teacher.updateTeacher(this.teacherObj).then(response => {
+        if (response.success) {
+          this.$message({
+            type: 'success',
+            message: '修改成功!'
+          })
+          this.$router.push({ path: '/teacher/list' })
+        }
+      })
+    },
+    saveTeacher() {
+      teacher.addTeacher(this.teacherObj).then(response => {
+        if (response.success) {
+          this.$message({
+            type: 'success',
+            message: '添加成功!'
+          })
+          this.$router.push({ path: '/teacher/list' })
+        }
+      })
     }
-  },
-  updateTeacher() {
-    teacher.updateTeacher(this.teacherObj).then(response => {
-      if (response.success) {
-        this.$message({
-          type: 'success',
-          message: '修改成功!'
-        })
-        this.$router.push({ path: '/teacher/list' })
-      }
-    })
-  },
-  saveTeacher() {
-    teacher.addTeacher(this.teacherObj).then(response => {
-      if (response.success) {
-        this.$message({
-          type: 'success',
-          message: '添加成功!'
-        })
-        this.$router.push({ path: '/teacher/list' })
-      }
-    })
   }
 }
 </script>
