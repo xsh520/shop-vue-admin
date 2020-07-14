@@ -98,14 +98,18 @@ export default {
       // 上传弹框组件是否显示
       imagecropperShow: false,
       imagecropperKey: 0, // 上传组件key值
-      BASE_API: process.env.BASE_API, // 获取dev.env.js里面地址
+      BASE_API: process.env.VUE_APP_BASE_API, // 获取dev.env.js里面地址
       saveBtnDisabled: false // 保存按钮是否禁用,
+    }
+  },
+  watch: { // 监听
+    $route(to, from) { // 路由变化方式，路由发生变化，方法就会执行
+      this.init()
     }
   },
   created() {
     this.init()
   },
-
   methods: {
     close() { // 关闭上传弹框的方法
       this.imagecropperShow = false
@@ -120,8 +124,8 @@ export default {
       this.imagecropperKey = this.imagecropperKey + 1
     },
     init() {
-      if (this.$router.params && this.$router.params.id) {
-        const id = this.$router.params.id
+      if (this.$route.params && this.$route.params.id) {
+        const id = this.$route.params.id
         this.getInfo(id)
       }
     },
