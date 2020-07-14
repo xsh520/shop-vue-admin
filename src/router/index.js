@@ -79,7 +79,7 @@ export const constantRoutes = [
         name: 'TeahcherEdit',
         component: () => import('@/views/edu/teacher/add'),
         meta: { title: '编辑讲师', noCache: true },
-        hidden: false
+        hidden: true
       }
     ]
   },
