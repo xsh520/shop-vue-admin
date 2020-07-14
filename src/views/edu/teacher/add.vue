@@ -137,10 +137,10 @@ export default {
         })
     },
     submitForm(formName) {
+      const that = this
       this.$refs[formName].validate(valid => {
         if (valid) {
-          console.log(this.teacherObj)
-          this.saveOrUpdate()
+          that.saveOrUpdate()
         } else {
           return false
         }
