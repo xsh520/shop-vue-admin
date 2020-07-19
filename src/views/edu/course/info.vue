@@ -62,6 +62,7 @@
         </el-form-item>
 
         <!-- 课程简介 TODO -->
+              <!-- 课程简介 TODO -->
         <!-- 课程简介-->
         <el-form-item label="课程简介">
             <tinymce :height="300" v-model="courseInfo.description"/>
@@ -78,7 +79,7 @@
                 :before-upload="beforeAvatarUpload"
                 :action="BASE_API+'/eduoss/fileoss'"
                 class="avatar-uploader">
-                <img :src="courseInfo.cover">
+                <img :src="courseInfo.cover" style="max-width: 300px;">
             </el-upload>
 
         </el-form-item>
@@ -97,9 +98,8 @@
 import course from '@/api/edu/course'
 import subject from '@/api/edu/subject'
 import Tinymce from '@/components/Tinymce' //引入组件
-
 export default {
-    //声明组件
+        //声明组件
     components: { Tinymce },
     data() {
         return {
@@ -111,18 +111,16 @@ export default {
                 teacherId: '',
                 lessonNum: 0,
                 description: '',
-                cover: '/static/01.jpg',
+                cover: 'https://shufancollege-01.oss-cn-beijing.aliyuncs.com/shufanshop/edu/01.jpg',
                 price: 0
             },
-            courseId:'',
-            BASE_API: process.env.BASE_API, // 接口API地址
+            BASE_API: process.env.VUE_APP_BASE_API, // 接口API地址
             teacherList:[],//封装所有的讲师
             subjectOneList:[],//一级分类
             subjectTwoList:[]//二级分类
         }   
     },
     created() {
-
         //获取路由id值
         if(this.$route.params && this.$route.params.id) {
             this.courseId = this.$route.params.id
@@ -135,10 +133,9 @@ export default {
             //初始化一级分类
             this.getOneSubject()
         }
-        
     },
     methods:{
-        //根据课程id查询
+         //根据课程id查询
         getInfo() {
             course.getCourseInfoId(this.courseId)
                 .then(response => {
@@ -156,7 +153,7 @@ export default {
                                 //比较当前courseInfo里面一级分类id和所有的一级分类id
                                 if(this.courseInfo.subjectParentId == oneSubject.id) {
                                     //获取一级分类所有的二级分类
-                                    this.subjectTwoList = oneSubject.children
+                                    this.subjectTwoList = oneSubject.child
                                 }
                             }
                         })
@@ -191,7 +188,7 @@ export default {
                 //判断：所有一级分类id 和 点击一级分类id是否一样
                 if(value === oneSubject.id) {
                     //从一级分类获取里面所有的二级分类
-                    this.subjectTwoList = oneSubject.children
+                    this.subjectTwoList = oneSubject.child
                     //把二级分类id值清空
                     this.courseInfo.subjectId = ''
                 }
@@ -208,10 +205,10 @@ export default {
         getListTeacher() {
             course.getListTeacher()
                 .then(response => {
-                    this.teacherList = response.data.items
+                    this.teacherList = response.data.list
                 })
         },
-        //添加课程
+            //添加课程
         addCourse() {
             course.addCourseInfo(this.courseInfo)
                 .then(response => {
@@ -253,4 +250,3 @@ export default {
 .tinymce-container {
   line-height: 29px;
 }
-</style>

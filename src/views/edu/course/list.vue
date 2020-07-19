@@ -1,185 +1,139 @@
 <template>
-
   <div class="app-container">
+    课程列表
 
-    <h2 style="text-align: center;">发布新课程</h2>
+    <!--查询表单-->
+    <el-form :inline="true" class="demo-form-inline">
+      <el-form-item>
+        <el-input v-model="courseQuery.title" placeholder="课程名称"/>
+      </el-form-item>
 
-    <el-steps :active="1" process-status="wait" align-center style="margin-bottom: 40px;">
-      <el-step title="填写课程基本信息"/>
-      <el-step title="创建课程大纲"/>
-      <el-step title="最终发布"/>
-    </el-steps>
-
-    <el-form label-width="120px">
-
-        <el-form-item label="课程标题">
-            <el-input v-model="courseInfo.title" placeholder=" 示例：机器学习项目课：从基础到搭建项目视频课程。专业名称注意大小写"/>
-        </el-form-item>
-
-        <!-- 所属分类 TODO -->
-        <el-form-item label="课程分类">
-            <el-select
-                v-model="courseInfo.subjectParentId"
-                placeholder="一级分类" @change="subjectLevelOneChanged">
-
-                <el-option
-                    v-for="subject in subjectOneList"
-                    :key="subject.id"
-                    :label="subject.title"
-                    :value="subject.id"/>
-
-            </el-select>
-
-            <!-- 二级分类 -->
-            <el-select v-model="courseInfo.subjectId" placeholder="二级分类">
-                <el-option
-                    v-for="subject in subjectTwoList"
-                    :key="subject.id"
-                    :label="subject.title"
-                    :value="subject.id"/>
-            </el-select>
-        </el-form-item>
-
-
-        <!-- 课程讲师 TODO -->
-        <!-- 课程讲师 -->
-        <el-form-item label="课程讲师">
-        <el-select
-            v-model="courseInfo.teacherId"
-            placeholder="请选择">
-
-            <el-option
-                v-for="teacher in teacherList"
-                :key="teacher.id"
-                :label="teacher.name"
-                :value="teacher.id"/>
-
+      <el-form-item>
+        <el-select v-model="courseQuery.status" clearable placeholder="课程状态">
+          <el-option value="Normal" label="已发布"/>
+          <el-option value="Draft" label="未发布"/>
         </el-select>
-        </el-form-item>
+      </el-form-item>
 
-        <el-form-item label="总课时">
-            <el-input-number :min="0" v-model="courseInfo.lessonNum" controls-position="right" placeholder="请填写课程的总课时数"/>
-        </el-form-item>
+      <el-button type="primary" icon="el-icon-search" @click="getList()">查询</el-button>
+      <el-button type="default" @click="resetData()">清空</el-button>
+    </el-form>
 
-        <!-- 课程简介 TODO -->
-        <el-form-item label="课程简介">
-            <el-input v-model="courseInfo.description" placeholder=" "/>
-        </el-form-item>
+    <!-- 表格 -->
+    <el-table
+      :data="list"
+      border
+      fit
+      highlight-current-row>
 
+      <el-table-column
+        label="序号"
+        width="70"
+        align="center">
+        <template slot-scope="scope">
+          {{ (page - 1) * limit + scope.$index + 1 }}
+        </template>
+      </el-table-column>
 
-        <!-- 课程封面 TODO -->
-        <!-- 课程封面-->
-        <el-form-item label="课程封面">
+      <el-table-column prop="title" label="课程名称" width="250" />
 
-            <el-upload
-                :show-file-list="false"
-                :on-success="handleAvatarSuccess"
-                :before-upload="beforeAvatarUpload"
-                :action="BASE_API+'/eduoss/fileoss'"
-                class="avatar-uploader">
-                <img :src="courseInfo.cover">
-            </el-upload>
+      <el-table-column label="课程状态" width="80">
+        <template slot-scope="scope">
+          {{ scope.row.status==='Normal'?'已发布':'未发布' }}
+        </template>
+      </el-table-column>
 
-        </el-form-item>
+      <el-table-column prop="lessonNum" label="课时数"  width="80" />
 
-        <el-form-item label="课程价格">
-            <el-input-number :min="0" v-model="courseInfo.price" controls-position="right" placeholder="免费课程请设置为0元"/> 元
-        </el-form-item>
+      <el-table-column prop="gmtCreate" label="添加时间" width="160"/>
 
-        <el-form-item>
-            <el-button :disabled="saveBtnDisabled" type="primary" @click="saveOrUpdate">保存并下一步</el-button>
-        </el-form-item>
-        </el-form>
+      <el-table-column prop="viewCount" label="浏览数量" width="60" />
+
+      <el-table-column label="操作" align="center">
+        <template slot-scope="scope">
+          <router-link :to="'/course/info/'+scope.row.id">
+            <el-button type="primary" size="mini" icon="el-icon-edit">编辑课程基本信息</el-button>
+          </router-link>
+          <router-link :to="'/course/chapter/'+scope.row.id">
+            <el-button type="primary" size="mini" icon="el-icon-edit" style="margin-left: 10px;">编辑课程大纲信息</el-button>
+          </router-link>
+          <el-button type="danger" size="mini" icon="el-icon-delete" style="margin-left: 10px;" @click="removeDataById(scope.row.id)">删除课程信息</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+  <!-- 分页 -->
+    <el-pagination
+      :current-page="page"
+      :page-size="limit"
+      :total="total"
+      style="padding: 30px 0; text-align: center;"
+      layout="total, prev, pager, next, jumper"
+      @current-change="getList"
+    />
+
   </div>
 </template>
 <script>
+//引入调用teacher.js文件
 import course from '@/api/edu/course'
-import subject from '@/api/edu/subject'
-export default {
-    data() {
-        return {
-            saveBtnDisabled:false,
-            courseInfo:{
-                title: '',
-                subjectId: '',//二级分类id
-                subjectParentId:'',//一级分类id
-                teacherId: '',
-                lessonNum: 0,
-                description: '',
-                cover: '/static/01.jpg',
-                price: 0
-            },
-            BASE_API: process.env.BASE_API, // 接口API地址
-            teacherList:[],//封装所有的讲师
-            subjectOneList:[],//一级分类
-            subjectTwoList:[]//二级分类
-        }   
-    },
-    created() {
-        //初始化所有讲师
-        this.getListTeacher()
-        //初始化一级分类
-        this.getOneSubject()
-    },
-    methods:{
-        //上传封面成功调用的方法
-        handleAvatarSuccess(res, file) {
-            this.courseInfo.cover = res.data.url
-        },
-        //上传之前调用的方法
-        beforeAvatarUpload(file) {
-            const isJPG = file.type === 'image/jpeg'
-            const isLt2M = file.size / 1024 / 1024 < 2
 
-            if (!isJPG) {
-                this.$message.error('上传头像图片只能是 JPG 格式!')
-            }
-            if (!isLt2M) {
-                this.$message.error('上传头像图片大小不能超过 2MB!')
-            }
-            return isJPG && isLt2M
+export default {
+    //写核心代码位置
+    // data:{
+    // },
+    data() { //定义变量和初始值
+        return {
+          list:null,//查询之后接口返回集合
+          page:1,//当前页
+          limit:10,//每页记录数
+          total:0,//总记录数
+          courseQuery:{} //条件封装对象
+        }
+    },
+    created() { //页面渲染之前执行，一般调用methods定义的方法
+        //调用
+        this.getList() 
+    },
+    methods:{  //创建具体的方法，调用teacher.js定义的方法
+        //讲师列表的方法
+        getList(page=1) {
+            this.page = page
+            course.getListCourse(this.page,this.limit,this.courseQuery)
+                .then(response =>{//请求成功
+                    //response接口返回的数据
+                    this.list = response.data.records
+                    this.total = response.data.total
+                }) 
         },
-        //点击某个一级分类，触发change，显示对应二级分类
-        subjectLevelOneChanged(value) {
-            //value就是一级分类id值
-            //遍历所有的分类，包含一级和二级
-            for(var i=0;i<this.subjectOneList.length;i++) {
-                //每个一级分类
-                var oneSubject = this.subjectOneList[i]
-                //判断：所有一级分类id 和 点击一级分类id是否一样
-                if(value === oneSubject.id) {
-                    //从一级分类获取里面所有的二级分类
-                    this.subjectTwoList = oneSubject.children
-                    //把二级分类id值清空
-                    this.courseInfo.subjectId = ''
+        resetData() {//清空的方法
+            //表单输入项数据清空
+            this.courseQuery = {}
+            //查询所有讲师数据
+            this.getList()
+        },
+        removeDataById(id) {
+            this.$confirm(
+                '此操作将会把该课程放入回收站(30天后会被删除), 是否继续?',
+                '提示',
+                {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
                 }
-            }
-        },
-        //查询所有的一级分类
-        getOneSubject() {
-            subject.getSubjectList()
-                .then(response => {
-                    this.subjectOneList = response.data.list
-                })
-        },
-        //查询所有的讲师
-        getListTeacher() {
-            course.getListTeacher()
-                .then(response => {
-                    this.teacherList = response.data.items
-                })
-        },
-        saveOrUpdate() {
-            course.addCourseInfo(this.courseInfo)
-                .then(response => {
-                    //提示
+            ).then(() => {
+              course.deleteByCourse(id).then(response =>{
+                if (response.success) {
                     this.$message({
-                        type: 'success',
-                        message: '添加课程信息成功!'
-                    });
-                    //跳转到第二步
-                    this.$router.push({path:'/course/chapter/'+response.data.courseId})
+                    type: 'success',
+                    message: '删除成功!'
+                    })
+                    this.getList()
+                } else {
+                    this.$message.error('删除失败，请刷新后重试')
+                }
                 })
+            })
         }
     }
 }
